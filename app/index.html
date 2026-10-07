@@ -21,6 +21,10 @@
 
     <!--    Toaster-->
     <link rel="stylesheet" href="lib/angularjs-toaster/toaster.min.css">
+    <!-- FullCalendar CSS & JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
 </head>
 <body ng-app="OnlineOrganizer">
 <!-- As a heading -->
@@ -98,7 +102,12 @@
                     </div>
                 </div>
             </div>
-            <div class="row mt-5 mb-5">
+            <div class="row mt-5 mb-3">
+                <div class="col-md-12">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+            <div class="row mb-5">
                 <div class="col-md-12 col-lg-12 col-sm-12 col-xl-12">
                     <div class="card">
                         <div class="card-header bg-dark btn-outline-info" style="color: #2196F3;">Events For Selected

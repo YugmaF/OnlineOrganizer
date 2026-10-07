@@ -1,49 +1,14 @@
 {
-  "_args": [
-    [
-      "angular-loader@1.7.5",
-      "C:\\Angular\\Assignment\\OnlineOrganizer"
-    ]
-  ],
-  "_from": "angular-loader@1.7.5",
-  "_id": "angular-loader@1.7.5",
-  "_inBundle": false,
-  "_integrity": "sha512-3dDyHc/ySVs/EjKcKOJQ8tppsnp64ZO1lrUD6H8JpKq947lntdE/KF5V2Urv91SaGofRY9VwLibkLTdF32FR5Q==",
-  "_location": "/angular-loader",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "version",
-    "registry": true,
-    "raw": "angular-loader@1.7.5",
-    "name": "angular-loader",
-    "escapedName": "angular-loader",
-    "rawSpec": "1.7.5",
-    "saveSpec": null,
-    "fetchSpec": "1.7.5"
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": "https://registry.npmjs.org/angular-loader/-/angular-loader-1.7.5.tgz",
-  "_spec": "1.7.5",
-  "_where": "C:\\Angular\\Assignment\\OnlineOrganizer",
-  "author": {
-    "name": "Angular Core Team",
-    "email": "angular-core+npm@google.com"
-  },
-  "bugs": {
-    "url": "https://github.com/angular/angular.js/issues"
-  },
+  "name": "angular-loader",
+  "version": "1.7.5",
   "description": "AngularJS module for asynchronously loading modules",
-  "homepage": "http://angularjs.org",
-  "jspm": {
-    "shim": {
-      "angular-loader": {
-        "deps": [
-          "angular"
-        ]
-      }
-    }
+  "main": "angular-loader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angular/angular.js.git"
   },
   "keywords": [
     "angular",
@@ -52,15 +17,17 @@
     "loader",
     "client-side"
   ],
+  "author": "Angular Core Team <angular-core+npm@google.com>",
   "license": "MIT",
-  "main": "angular-loader.js",
-  "name": "angular-loader",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/angular/angular.js.git"
+  "bugs": {
+    "url": "https://github.com/angular/angular.js/issues"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "version": "1.7.5"
+  "homepage": "http://angularjs.org",
+  "jspm": {
+    "shim": {
+      "angular-loader": {
+        "deps": ["angular"]
+      }
+    }
+  }
 }

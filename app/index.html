@@ -2,208 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Organizer</title>
-    <!-- Latest compiled and minified CSS -->
-    <!-- Popper JS -->
-    <script src="lib/popper.js/dist/popper.min.js"></script>
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
-
-    <!-- jQuery library -->
-    <script src="lib/jquery/dist/jquery.min.js"></script>
-    <!-- Latest compiled JavaScript -->
-    <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="assets/plugins/time_picker_jquery/mdtimepicker.css">
-    <script src="assets/plugins/time_picker_jquery/mdtimepicker.js"></script>
-
-    <!--    Angular material-->
     <link rel="stylesheet" href="lib/angular-material/angular-material.min.css">
-
-    <!--    Toaster-->
     <link rel="stylesheet" href="lib/angularjs-toaster/toaster.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="app/app.css">
 </head>
 <body ng-app="OnlineOrganizer">
-<!-- As a heading -->
 <nav class="navbar navbar-dark bg-dark">
     <span class="navbar-brand mb-0 h1">Online Organizer</span>
 </nav>
-<main ng-controller="eventDetails" class="container-fluid">
-    <div class="row mt-3">
-        <div class="col-md-4">
-            <div class="row">
-                <div class="col-md-12 col-lg-9 col-xl-9 col-sm-12 mt-3">
-                    <input type="text" ng-keyup="checkKeyPressEvent($event)" ng-model="eventName" class="form-control"
-                           placeholder="Event name">
+<main ng-controller="eventDetails as vm" class="container-fluid bg-gradient py-4">
+    <div class="row gx-4">
+        <section class="col-12 col-lg-8">
+            <div class="card shadow-sm rounded-3 p-4 mb-4 modern-panel">
+                <header class="d-flex align-items-center justify-content-between mb-3">
+                    <h2 class="fs-20 fw-bold m-0">Events Calendar</h2>
+                    <button class="btn btn-outline-primary" ng-click="vm.openEventDrawer('create')">
+                        <i class="me-2 bi bi-plus"></i>Add event
+                    </button>
+                </header>
+                <div id="calendar"></div>
+            </div>
+        </section>
+        <section class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-3 p-4 mb-4 modern-panel">
+                <h3 class="fs-16 fw-semibold mb-3">Next Event</h3>
+                <div class="border rounded-3 p-3 text-center" ng-if="vm.nextEvent">
+                    <div class="text-muted fs-12">On {{vm.nextEvent.eventDate | date:'fullDate'}}</div>
+                    <div class="fs-24 fw-semibold">{{vm.nextEvent.eventName}}</div>
+                    <div class="text-primary fs-15">{{vm.nextEvent.eventTime}}</div>
+                    <p class="mt-3 mb-0 text-secondary">
+                        {{vm.countdown.rDays}}d {{vm.countdown.rHours}}h {{vm.countdown.rMinutes}}m {{vm.countdown.rSeconds}}s remaining
+                    </p>
                 </div>
-                <div class="col-md-12 col-lg-3 col-xl-3 col-sm-12 mt-3">
-                    <button ng-click="addEvent()" class="btn btn-success col-12">ADD</button>
-                </div>
-                <div class="col-md-12 col-lg-12 col-xl-12 col-sm-12 mt-3" ng-show="error.show && error.errorName">
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>{{error.errorName}}</strong>
-                    </div>
+                <div class="text-center py-4" ng-if="!vm.nextEvent">
+                    <p class="fs-14 text-muted">Nothing scheduled yet. Tap any day to add an event.</p>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-md-12 col-lg-12 col-xl-12 col-sm-12 mt-3" ng-show="error.show && error.errorTime">
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>{{error.errorTime}}</strong>
-                    </div>
-                </div>
-                <div class="col-md-12 col-lg-9 col-xl-9 col-sm-12 mt-3">
-                    <div class="form-group">
-                        <label for="timePicker">Select time</label>
-                        <input type="text" ng-model="eventTime" id="timepicker" class="form-control">
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12 col-lg-12 col-xl-12 col-sm-12 mt-3" ng-show="error.show && error.errorDate">
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>{{error.errorDate}}</strong>
-                    </div>
-                </div>
-                <div class="col-md-12 col-lg-12 col-xl-9 col-sm-12 mt-3">
-                    <md-subheader class="bg-dark btn-outline-info" style="color: #2196F3;">Select Date</md-subheader>
-                    <md-calendar ng-change="getEventsOnCalenderChange()" class="col-lg-12"
-                                 ng-model="eventDate"></md-calendar>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-8 mt-3 mb-5">
-            <div class="row">
-                <div class="col-md-12 col-lg-12 col-sm-12 col-xl-12">
-                    <div class="card">
-                        <div class="card-header bg-dark btn-outline-info" style="color: #2196F3;">
-                            {{eventsForSelectedDate.length > 0 ?
-                            'Nearest upcoming event for selected date': 'Nearest upcoming event'}}
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info d-flex justify-content-between" role="alert">
-                                <div class="col-4">
-                                    {{getNextEvent().eventName ? getNextEvent().eventName : 'No events!'}}
-                                </div>
-                                <div class="col-4">
-                                    {{getNextEvent().eventName ? 'On : ' + (getNextEvent().eventDate | date:
-                                    "dd/MM/yyyy") + ' at : ' + getNextEvent().eventTime : ''}}
-                                </div>
-                                <div class="col-4">
-                                    {{getNextEvent().eventName ? ' Time remaining : ' + rDays + 'd ' + rHours + 'h ' +
-                                    rMinutes +
-                                    'm ' + rSeconds + 's' : ''}}
-                                </div>
+            <div class="card shadow-sm rounded-3 p-4 modern-panel">
+                <h3 class="fs-16 fw-semibold mb-3">Selected Day</h3>
+                <div ng-if="vm.selectedDayEvents.length === 0" class="text-muted">No events for this day.</div>
+                <ul class="list-unstyled" ng-if="vm.selectedDayEvents.length > 0">
+                    <li class="mb-3" ng-repeat="event in vm.selectedDayEvents | orderBy:'eventTimeInStandardHours'">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{event.eventName}}</div>
+                                <div class="text-secondary">{{event.eventTime}}</div>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-danger me-1" ng-click="vm.deleteEvent(event.id)">Delete</button>
+                                <button class="btn btn-sm btn-outline-info" ng-click="vm.openEventDrawer('edit', event)">Edit</button>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
-            <div class="row mt-5 mb-5">
-                <div class="col-md-12 col-lg-12 col-sm-12 col-xl-12">
-                    <div class="card">
-                        <div class="card-header bg-dark btn-outline-info" style="color: #2196F3;">Events For Selected
-                            Date
-                        </div>
-                        <div class="card-body">
-                            <div ng-repeat="eventByDate in eventsForSelectedDate | orderBy: 'distinctDate'"
-                                 class="alert alert-info mt-2" role="alert">
-                                Date : {{eventByDate.distinctDate | date: "dd/MM/yyyy"}}
-                                <div class="card mt-3">
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item d-flex justify-content-between"
-                                            ng-repeat="eventUnderDate in eventByDate.eventsUnderDate | orderBy: 'eventTimeInStandardHours'">
-                                            <!--Left-->
-                                            <div class="col-4">
-                                                {{eventUnderDate.eventName}}
-                                            </div>
-                                            <!--Middle-->
-                                            <div class="col-4">
-                                                {{eventUnderDate.eventTime}}
-                                            </div>
-                                            <!--Right-->
-                                            <div class="col-4 text-right">
-                                                <button type="button" class="btn btn-danger" data-toggle="tooltip"
-                                                        data-placement="bottom" title="Delete"
-                                                        ng-click="deleteEvent(eventUnderDate.id, 'userDelete')">
-                                                    <img
-                                                            ng-src="assets/images/delete.png" alt="delete.png"></button>
-                                                <button type="button" class="btn btn-info" data-toggle="tooltip"
-                                                        data-placement="bottom" title="Edit"
-                                                        ng-click="editEvent(eventUnderDate.id)">
-                                                    <img
-                                                            ng-src="assets/images/edit.png" alt="edit.png"></button>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-5 mb-5">
-                <div class="col-md-12 col-lg-12 col-sm-12 col-xl-12">
-                    <div class="card">
-                        <div class="card-header bg-dark btn-outline-info" style="color: #2196F3;">All Events</div>
-                        <div class="card-body">
-                            <div ng-repeat="eventByDate in eventsOrderByDate | orderBy: 'distinctDate'"
-                                 class="alert alert-info mt-2" role="alert">
-                                Date : {{eventByDate.distinctDate | date: "dd/MM/yyyy"}}
-                                <div class="card mt-3">
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item d-flex justify-content-between"
-                                            ng-repeat="eventUnderDate in eventByDate.eventsUnderDate | orderBy: 'eventTimeInStandardHours'">
-                                            <!--Left-->
-                                            <div class="col-4">
-                                                {{eventUnderDate.eventName}}
-                                            </div>
-                                            <!--Middle-->
-                                            <div class="col-4">
-                                                {{eventUnderDate.eventTime}}
-                                            </div>
-                                            <!--Right-->
-                                            <div class="col-4 text-right">
-                                                <button class="btn btn-danger" data-toggle="tooltip"
-                                                        data-placement="bottom" title="Delete"
-                                                        ng-click="deleteEvent(eventUnderDate.id, 'userDelete')">
-                                                    <img
-                                                            ng-src="assets/images/delete.png" alt="delete.png"></button>
-                                                <button class="btn btn-info" data-toggle="tooltip"
-                                                        data-placement="bottom" title="Edit"
-                                                        ng-click="editEvent(eventUnderDate.id)">
-                                                    <img
-                                                            ng-src="assets/images/edit.png" alt="edit.png"></button>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
-    <toaster-container toaster-options="{'time-out': 3000, 'close-button': true}"></toaster-container>
 </main>
 
+<!-- Drawers -->
+<div class="drawer-backdrop" ng-if="vm.drawerOpen" ng-click="vm.closeDrawer()"></div>
+<div class="drawer" ng-class="{open: vm.drawerOpen}">
+    <div class="drawer-header">
+        <h3>{{vm.drawerMode === 'edit' ? 'Edit Event' : 'Add Event'}}</h3>
+        <button class="btn btn-link text-muted p-0" ng-click="vm.closeDrawer()">Close</button>
+    </div>
+    <form class="drawer-body" ng-submit="vm.submitEvent()">
+        <div class="mb-3">
+            <label class="form-label">Event name</label>
+            <input type="text" ng-model="vm.form.name" class="form-control" required ng-minlength="3">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" ng-model="vm.form.date" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Time</label>
+            <input type="time" ng-model="vm.form.time" class="form-control" required>
+        </div>
+        <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-secondary me-2" ng-click="vm.closeDrawer()">Cancel</button>
+            <button type="submit" class="btn btn-primary">{{vm.drawerMode === 'edit' ? 'Save changes' : 'Create event'}}</button>
+        </div>
+    </form>
+</div>
 
+<toaster-container toaster-options="{'time-out': 3000, 'close-button': true}"></toaster-container>
+
+<script src="lib/jquery/dist/jquery.min.js"></script>
+<script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
 <script src="lib/angular/angular.js"></script>
-<script src="lib/angular-route/angular-route.js"></script>
-<!--Following codes is used to import the app and controller-->
-<script src="app.js"></script>
-<!---->
-<script src="core/version/version.js"></script>
-<script src="core/version/version-directive.js"></script>
-<script src="core/version/interpolate-filter.js"></script>
-
-<!--  Angular material imports-->
 <script src="lib/angular-animate/angular-animate.js"></script>
 <script src="lib/angular-aria/angular-aria.min.js"></script>
 <script src="lib/angular-material/angular-material.min.js"></script>
-<!-- Toaster Js-->
 <script src="lib/angularjs-toaster/toaster.min.js"></script>
-<!--Time picker plugin-->
-<script src="assets/scripts/jqueryScripts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="app/app.js"></script>
 </body>
 </html>

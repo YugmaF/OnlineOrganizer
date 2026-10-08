@@ -1,25 +1,63 @@
-/* app css stylesheet */
-
-.menu {
-  list-style: none;
-  border-bottom: 0.1em solid black;
-  margin-bottom: 2em;
-  padding: 0 0 0.5em;
+body {
+  background: #f5f7fb;
+  color: #1a1a1a;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  min-height: 100vh;
 }
 
-.menu:before {
-  content: "[";
+.bg-gradient {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(234, 239, 248, 0.98));
 }
 
-.menu:after {
-  content: "]";
+.modern-panel {
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
 }
 
-.menu > li {
-  display: inline;
+.drawer {
+  position: fixed;
+  right: -360px;
+  top: 0;
+  bottom: 0;
+  width: 360px;
+  z-index: 1050;
+  background: #fff;
+  box-shadow: -4px 0 30px rgba(15, 23, 42, 0.25);
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-.menu > li + li:before {
-  content: "|";
-  padding-right: 0.3em;
+.drawer.open {
+  right: 0;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1020;
+}
+
+.drawer-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e6e9ef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-body {
+  padding: 1.5rem;
+  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-body .form-label {
+  font-weight: 600;
+}
+
+.bg-gradient main {
+  min-height: calc(100vh - 56px);
 }

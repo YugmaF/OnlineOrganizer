@@ -1,361 +1,122 @@
 let app = angular
     .module('OnlineOrganizer', ['ngMaterial', 'toaster', 'ngAnimate'])
-    .controller("eventDetails", function ($scope, $interval, toaster) {
+    .controller('eventDetails', function ($scope, $interval, toaster, $timeout) {
+        const vm = this;
+        const popup = (type, body) => toaster.pop({type, body});
 
-        $scope.eventTime = new Date().toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', hour12: true});
-        $scope.eventDate = new Date();
+        vm.events = [];
+        vm.drawerOpen = false;
+        vm.drawerMode = 'create';
+        const today = new Date().toISOString().split('T')[0];
+        vm.activeDate = today;
+        vm.form = {name: '', date: today, time: new Date().toTimeString().slice(0, 5)};
+        vm.selectedDayEvents = [];
+        vm.countdown = {rDays: 0, rHours: 0, rMinutes: 0, rSeconds: 0};
 
-        //events date wise
-        let eventsOrderByDate = [];
-        $scope.eventsOrderByDate = eventsOrderByDate;
-        //Events for selected date
-        $scope.eventsForSelectedDate = [];
+        const parseToDate = (dateStr, timeStr) => new Date(`${dateStr}T${timeStr}:00`);
+        const formatTime = date => date.toLocaleTimeString('en-US', {hour: 'numeric', minute: 'numeric', hour12: true});
 
-        //keep information about errors
-        $scope.error = {};
-
-        //Toaster popup function
-        const pop = function (message) {
-            toaster.pop({type: message.type, body: message.body});
-        };
-
-        //returns the next event
-        $scope.getNextEvent = () => {
-            if ($scope.eventsForSelectedDate.length > 0) {
-                //consider first element of the array
-                let nextEventDate = $scope.eventsForSelectedDate[0].distinctDate;
-                //consider next event object as the first element
-                let nextEventObject = $scope.eventsForSelectedDate[0];
-                //get the object that includes the most old date
-                $scope.eventsForSelectedDate.forEach(event => {
-                    if (nextEventDate >= event.distinctDate) {
-                        nextEventDate = event.distinctDate;
-                        nextEventObject = event;
-                    }
-                });
-                //The next event exist in the object where has the oldest date
-                let nextEvent = nextEventObject.eventsUnderDate[0];
-                //get the event which has the oldest time
-                nextEventObject.eventsUnderDate.forEach(next => {
-                    if (next.eventTimeInStandardHours <= nextEvent.eventTimeInStandardHours) {
-                        nextEvent = next;
-                    }
-                });
-                //returns the object which includes the oldest date
-                return nextEvent;
-            } else if ($scope.eventsOrderByDate.length > 0) {
-                //consider first element of the array
-                let nextEventDate = $scope.eventsOrderByDate[0].distinctDate;
-                //consider next event object as the first element
-                let nextEventObject = $scope.eventsOrderByDate[0];
-                //get the object that includes the most old date
-                $scope.eventsOrderByDate.forEach(event => {
-                    if (nextEventDate >= event.distinctDate) {
-                        nextEventDate = event.distinctDate;
-                        nextEventObject = event;
-                    }
-                });
-                //The next event exist in the object where has the oldest date
-                let nextEvent = nextEventObject.eventsUnderDate[0];
-                //get the event which has the oldest time
-                nextEventObject.eventsUnderDate.forEach(next => {
-                    if (next.eventTimeInStandardHours <= nextEvent.eventTimeInStandardHours) {
-                        nextEvent = next;
-                    }
-                });
-                //returns the object which includes the oldest date
-                return nextEvent;
-            }
-            //If the events are empty returns null object
-            return;
-        };
-
-        //Time like 12:00 PM will be converted to 12:00:00
-        //24H clock time generator function
-        const getTimeFromLocaleString = (eventDate, eventTime) => {
-            let date = eventDate.split('-');
-            let time = eventTime.split(' ')[0].split(':');
-            let identifier = eventTime.split(' ')[1];
-            if (identifier === 'PM') {
-                if (time[0] !== '12') {
-                    time[0] = '' + (parseInt(time[0]) + 12);
+        const updateNextEvent = () => {
+            const now = Date.now();
+            const upcoming = vm.events.filter(ev => parseToDate(ev.date, ev.time) > now).sort((a, b) => parseToDate(a.date, a.time) - parseToDate(b.date, b.time));
+            vm.nextEvent = upcoming[0];
+            if (vm.nextEvent) {
+                const diff = parseToDate(vm.nextEvent.date, vm.nextEvent.time) - now;
+                vm.countdown.rSeconds = Math.floor((diff / 1000) % 60);
+                vm.countdown.rMinutes = Math.floor((diff / 1000 / 60) % 60);
+                vm.countdown.rHours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                vm.countdown.rDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+                if (diff <= 0) {
+                    popup('warning', `Event: ${vm.nextEvent.name} is overdue`);
+                    vm.deleteEvent(vm.nextEvent.id);
                 }
-                return new Date(date[0], (date[1] - 1), date[2], time[0], time[1]);
             } else {
-                if (time[0] !== '12') {
-                    return new Date(date[0], (date[1] - 1), date[2], time[0], time[1]);
-                }
-                return new Date(date[0], (date[1] - 1), date[2], "00", time[1]);
+                vm.countdown = {rDays: 0, rHours: 0, rMinutes: 0, rSeconds: 0};
             }
         };
 
-        //Use for countdown of the nearest event
-        $interval(function () {
-            let nextEvent = $scope.getNextEvent();
-            if (nextEvent) {
-                //Check whether the next event is already expired or not
-                if((getTimeInStandardHours(nextEvent.eventTime) > getTimeInStandardHours(new Date().toLocaleString('en-US', {
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    hour12: true
-                }))) || (dateConvert(Date.now()) !== dateConvert(nextEvent.eventDate))){
-                    let time = getTimeFromLocaleString(dateConvert(nextEvent.eventDate), nextEvent.eventTime);
-                    let t = Date.parse(time) - Date.now();
-                    $scope.rSeconds = Math.floor((t / 1000) % 60);
-                    $scope.rMinutes = Math.floor((t / 1000 / 60) % 60);
-                    $scope.rHours = Math.floor((t / (1000 * 60 * 60)) % 24);
-                    $scope.rDays = Math.floor(t / (1000 * 60 * 60 * 24));
-                    if ($scope.rDays === 0 && $scope.rHours === 0 && $scope.rMinutes === 0 && $scope.rSeconds === 0) {
-                        //Times up
-                        //overdue events should be deleted
-                        //Popup message
-                        const popupMessage = {
-                            type: "warning",
-                            body: "Event : " + nextEvent.eventName + " is recently overdue"
-                        };
-                        //Display popup
-                        pop(popupMessage);
-                        $scope.deleteEvent(nextEvent.id, "overdue");
-                    }
-                }else{
-                    //If expired
-                    //Times up
-                    //overdue events should be deleted
-                    //Popup message
-                    const popupMessage = {
-                        type: "warning",
-                        body: "Event : " + nextEvent.eventName + " is recently overdue"
-                    };
-                    //Display popup
-                    pop(popupMessage);
-                    $scope.deleteEvent(nextEvent.id, "overdue");
-                }
+        $interval(updateNextEvent, 1000);
+
+        vm.saveEvents = () => { // stub for persistence in future
+        };
+
+        vm.loadEventsForDate = date => vm.selectedDayEvents = vm.events.filter(ev => ev.date === date);
+
+        vm.deleteEvent = id => {
+            vm.events = vm.events.filter(ev => ev.id !== id);
+            popup('success', 'Event deleted successfully');
+            vm.loadEventsForDate(vm.activeDate ?? vm.form.date);
+            updateNextEvent();
+            if (vm.calendar) {
+                vm.calendar.removeAllEvents();
+                vm.calendar.refetchEvents();
             }
-        }, 1000);
+        };
 
-        //Add event function
-        $scope.addEvent = () => {
-            //checking event name, event date and event time validation
-            //Name cannot be empty
-            //Date must be a future date
-            //Time also must be a future time
-            //checks the date and time with current date and time
-            //If date is a future date, then current time or higher is acceptable
-            //If the date is equal to current date, then current time is not acceptable. Only future times are expected
-            if ($scope.eventName && (dateConvert(Date.now()) <= dateConvert($scope.eventDate)) && ((dateConvert(Date.now()) === dateConvert($scope.eventDate)) && (getTimeInStandardHours($scope.eventTime) > getTimeInStandardHours(new Date().toLocaleString('en-US', {
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
-            }))) || (dateConvert(Date.now()) !== dateConvert($scope.eventDate)))) {
-                //no errors
-                $scope.error = {
-                    show: $scope.error.show ? !$scope.error.show : false
-                };
-
-                //create event object
-                let event = {
-                    id: Date.now(),
-                    eventName: $scope.eventName,
-                    eventTime: $scope.eventTime,
-                    eventTimeInStandardHours: getTimeInStandardHours($scope.eventTime),
-                    eventDate: $scope.eventDate
-                };
-
-                //getEventsOrderByDate returns all events order by the date
-                //if there are null arrays, clear them
-                eventsOrderByDate = eventsOrderByDate.filter(event => event.eventsUnderDate.length > 0);
-                eventsOrderByDate = getEventsOrderByDate(event, eventsOrderByDate);
-
-                //Re-initializing variables
-                $scope.eventName = '';
-                $scope.eventTime = new Date().toLocaleString('en-US', {
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    hour12: true
-                });
-                $scope.eventDate = new Date();
-                $scope.eventsOrderByDate = eventsOrderByDate;
+        vm.openEventDrawer = (mode, event) => {
+            vm.drawerMode = mode;
+            vm.drawerOpen = true;
+            if (mode === 'edit' && event) {
+                vm.form = {name: event.name, date: event.date, time: event.time, id: event.id};
             } else {
-                //has errors
-                //setting errors
-                //If name is null, Then errorName is assigned
-                //If the date is not a future date, Then errorDate is assigned
-                //if the time is not future time, Then errorTime is assigned
-                $scope.error = {
-                    show: true,
-                    errorName: !$scope.eventName ? 'Name cannot be empty' : '',
-                    errorDate: !(dateConvert(Date.now()) <= dateConvert($scope.eventDate)) ? 'Date must be a future date' : '',
-                    errorTime: (getTimeInStandardHours($scope.eventTime) <= getTimeInStandardHours(new Date().toLocaleString('en-US', {
-                        hour: 'numeric',
-                        minute: 'numeric',
-                        hour12: true
-                    }))) ? 'Time must be a future time' : ''
-                }
+                vm.form = {name: '', date: vm.activeDate ?? new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5)};
             }
         };
 
-        //get time in 24 hours in order to sort the events by time
-        //21:00:00 , 09:00:00
-        //special 12:00 PM = 12:00:00  and 12:00 AM = 00:00:00 AM
-        const getTimeInStandardHours = (eventTime) => {
-            let time = eventTime.split(' ')[0].split(':');
-            let identifier = eventTime.split(' ')[1];
+        vm.closeDrawer = () => vm.drawerOpen = false;
 
-            let seconds = new Date().getSeconds();
-            if (new Date().getSeconds() < 10) {
-                seconds = "0" + new Date().getSeconds();
+        vm.submitEvent = () => {
+            const target = parseToDate(vm.form.date, vm.form.time);
+            if (target <= Date.now()) {
+                popup('error', 'Please choose a future date/time.');
+                return;
             }
-
-            if (identifier === 'PM') {
-                if (time[0] !== '12') {
-                    time[0] = '' + (parseInt(time[0]) + 12);
-                }
-                return time[0] + ":" + time[1] + ":" + seconds;
+            if (vm.drawerMode === 'edit') {
+                vm.events = vm.events.map(ev => ev.id === vm.form.id ? {...ev, name: vm.form.name, date: vm.form.date, time: vm.form.time} : ev);
+                popup('success', 'Event updated successfully');
             } else {
-                if (time[0] !== '12') {
-                    return time[0] < 10 ? "0" + time[0] + ":" + time[1] + ":" + seconds : time[0] + ":" + time[1] + ":" + seconds;
-                }
-                return "00" + ":" + time[1] + ":" + seconds;
+                vm.events.push({id: Date.now(), name: vm.form.name, date: vm.form.date, time: vm.form.time});
+                popup('success', 'Event added successfully');
             }
+            vm.loadEventsForDate(vm.activeDate ?? vm.form.date);
+            vm.closeDrawer();
+            updateNextEvent();
+            if (vm.calendar) vm.calendar.refetchEvents();
         };
 
-        //returns events for the selected date
-        const getEventsForSelectedDate = (eventsOrderByDate) => {
-            if (eventsOrderByDate) {
-                $scope.eventsForSelectedDate = [];
-                $scope.eventsForSelectedDate = eventsOrderByDate.filter(event => dateConvert(event.distinctDate) === dateConvert($scope.eventDate));
-            }
-        }
-
-        //returns events on calendar date change
-        $scope.getEventsOnCalenderChange = () => {
-            if ($scope.eventsOrderByDate) {
-                $scope.eventsForSelectedDate = [];
-                $scope.eventsForSelectedDate = $scope.eventsOrderByDate.filter(event => dateConvert(event.distinctDate) === dateConvert($scope.eventDate));
-            }
-        }
-
-        //delete function
-        $scope.deleteEvent = (id, action) => {
-            $scope.eventsOrderByDate.forEach(eventByDate => {
-                eventByDate.eventsUnderDate = eventByDate.eventsUnderDate.filter(event => event.id !== id);
-                //if the action performed by the user
-                //Display popup message
-                if (action === 'userDelete') {
-                    const popupMessage = {
-                        type: "success",
-                        body: "Event is deleted successfully!"
-                    };
-                    pop(popupMessage);
-                }
+        const initCalendar = () => {
+            const calendarEl = document.getElementById('calendar');
+            vm.calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                themeSystem: 'standard',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                dateClick: info => {
+                    vm.activeDate = info.dateStr;
+                    vm.loadEventsForDate(info.dateStr);
+                    $scope.$applyAsync(() => vm.openEventDrawer('create'));
+                },
+                eventClick: info => {
+                    const event = info.event.extendedProps.helpers;
+                    vm.activeDate = event.date;
+                    vm.loadEventsForDate(event.date);
+                    $scope.$applyAsync(() => vm.openEventDrawer('edit', event));
+                },
+                events: info => {
+                    $scope.$applyAsync(() => info.success(vm.events.map(ev => ({
+                        id: ev.id,
+                        title: ev.name,
+                        start: `${ev.date}T${ev.time}`,
+                        extendedProps: {helpers: ev}
+                    }))));
+                },
+                selectable: true
             });
-            //if there are null arrays, clear them
-            $scope.eventsOrderByDate = $scope.eventsOrderByDate.filter(event => event.eventsUnderDate.length > 0);
-            //if there are null arrays in selectedDate object clear them
-            $scope.eventsForSelectedDate = $scope.eventsForSelectedDate.filter(event => event.eventsUnderDate.length > 0);
-
-            //check for latest, once delete action is performed
-            $scope.getNextEvent();
+            vm.calendar.render();
         };
 
-        $scope.editEvent = (id) => {
-            let eventObject;
-            //Retrieving the event object that matches to the given id
-            $scope.eventsOrderByDate.forEach(eventByDate => {
-                eventObject = eventByDate.eventsUnderDate.filter(event => event.id === id);
-            });
-
-            if (eventObject) {
-                //Popup message
-                const popupMessage = {
-                    type: "info",
-                    body: eventObject[0].eventName + " edit now!"
-                };
-                //Display popup
-                pop(popupMessage);
-                $scope.eventTime = eventObject[0].eventTime;
-                $scope.eventDate = eventObject[0].eventDate;
-                $scope.eventName = eventObject[0].eventName;
-            }
-
-            $scope.deleteEvent(id, "edit");
-            console.log(eventObject);
-        };
-
-        //all key events can be processed
-        $scope.checkKeyPressEvent = (keyEvent) => {
-            //enter key press event
-            if (keyEvent.which === 13) {
-                $scope.addEvent();
-            }
-        };
-
-        //given date string convert to dd/MM/yyyy format
-        const dateConvert = (dateStr) => {
-            let date = new Date(dateStr),
-                month = ("0" + (date.getMonth() + 1)).slice(-2),
-                day = ("0" + date.getDate()).slice(-2);
-            return [date.getFullYear(), month, day].join("-");
-        };
-
-        //generate and return events ordered by dates
-        const getEventsOrderByDate = (event, eventsOrderByDate) => {
-            //Popup message
-            const popupMessage = {
-                type: "success",
-                body: "Event is successfully added!"
-            };
-
-            if (eventsOrderByDate.length === 0) {
-                //There are no events and user tries to add the first one
-                eventsOrderByDate.push({
-                    distinctDate: event.eventDate,
-                    eventsUnderDate: [{
-                        id: event.id,
-                        eventName: event.eventName,
-                        eventTime: event.eventTime,
-                        eventTimeInStandardHours: event.eventTimeInStandardHours,
-                        eventDate: event.eventDate
-                    }]
-                });
-            } else {
-                //variable keep track about the date is exists or not in the list
-                let dateExist = false;
-                eventsOrderByDate.forEach(eventOrderByDate => {
-                    //If the date is found
-                    if (dateConvert(eventOrderByDate.distinctDate) === dateConvert(event.eventDate)) {
-                        //Add event under the exist date
-                        eventOrderByDate.eventsUnderDate.push({
-                            id: event.id,
-                            eventName: event.eventName,
-                            eventTime: event.eventTime,
-                            eventTimeInStandardHours: event.eventTimeInStandardHours,
-                            eventDate: event.eventDate
-                        });
-                        dateExist = true;
-                        return;
-                    }
-                });
-
-                if (!dateExist) {
-                    //If the date isn't found, then add new event under new date
-                    eventsOrderByDate.push({
-                        distinctDate: event.eventDate,
-                        eventsUnderDate: [{
-                            id: event.id,
-                            eventName: event.eventName,
-                            eventTime: event.eventTime,
-                            eventTimeInStandardHours: event.eventTimeInStandardHours,
-                            eventDate: event.eventDate
-                        }]
-                    });
-                }
-            }
-
-            getEventsForSelectedDate(eventsOrderByDate);
-            //Display popup message
-            pop(popupMessage);
-            //returning new instance of eventsOrderByDate
-            return eventsOrderByDate;
-        };
+        $timeout(initCalendar);
     });
